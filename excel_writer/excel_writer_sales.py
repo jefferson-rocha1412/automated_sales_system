@@ -2,10 +2,25 @@ import pandas as pd
 import os
 from sales.sales_data import get_excel_data
 from config.config import Config
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
 def sales_report():
+    # BORDER SETTINGS
+    thick_border = Border(
+        left=Side(style='thick', color='000000'),
+        right=Side(style='thick', color='000000'),
+        top=Side(style='thick', color='000000'),
+        bottom=Side(style='thick', color='000000')
+    )
+
+    thin_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+
     sales_data, sales_by_person = get_excel_data()
 
     if sales_data is None or sales_by_person is None:
@@ -32,8 +47,10 @@ def sales_report():
 
             # FORMAT THE HEADERS
             for cell in worksheet_summary[1]:
-                cell.font = Font(bold=True)
+                cell.font = Font(bold=True, color='FFFFFF')
                 cell.alignment = Alignment(horizontal='center')
+                cell.fill = PatternFill(fill_type='solid', fgColor='1F4E78')
+                cell.border = thick_border
 
                 if cell.value == 'Unit Price':
                     unitprice_column_letter = get_column_letter(cell.column)
@@ -64,23 +81,32 @@ def sales_report():
                             length = len(f"{cell.value:,.2f}")
                         else:
                             length = len(str(cell.value))
+                            cell.alignment = Alignment(horizontal='center', wrap_text=True)
 
                         max_length = max(max_length, length)
 
                 worksheet_summary.column_dimensions[column_letter].width = max_length + 2
 
-            #-- FORMATTING THE SUMMARY SHEET --#
+            # FREEZE PANES
+            worksheet_summary.freeze_panes = 'A2'
+
+            # AUTO FILTERING
+            worksheet_summary.auto_filter.ref = worksheet_summary.dimensions
+
+            #-- FORMATTING THE SALES BY PERSON SHEET --#
             worksheet_salesbyperson = writer.sheets[Config.SALES_REPORT_SALESBYPERSON_SHEET]
 
             # FORMAT THE HEADERS
             for cell in worksheet_salesbyperson[1]:
-                cell.font = Font(bold=True)
+                cell.font = Font(bold=True, color='FFFFFF')
                 cell.alignment = Alignment(horizontal='center')
+                cell.fill = PatternFill(fill_type='solid', fgColor='FF8C00')
+                cell.border = thick_border
 
                 if cell.value == 'Sales':
                     sales2_column_letter = get_column_letter(cell.column)
 
-            # FORMAT THE PRICE COLUMN
+            # FORMAT THE SALES COLUMN
             for cell in worksheet_salesbyperson[sales2_column_letter][1:]:
                 cell.number_format = "#,##0.00"
 
@@ -88,13 +114,21 @@ def sales_report():
             for column_number, column in enumerate(worksheet_salesbyperson.columns, start=1):
                 max_length = 0
 
-                for cell in column:
-                    if cell.value is not None:
-                        length = len(str(cell.value))
-                        max_length = max(max_length, length)
-
                 # GET THE COLUMN LETTER
                 column_letter = get_column_letter(column_number)
+
+                for cell in column:
+                    cell.border = thin_border
+
+                    if cell.value is not None:
+                        if cell.row == 1:
+                            length = len(str(cell.value))
+                        elif column_letter == sales2_column_letter:
+                            length = len(f"{cell.value:,.2f}")
+                        else:
+                            length = len(str(cell.value))
+                        
+                        max_length = max(max_length, length)
 
                 worksheet_salesbyperson.column_dimensions[column_letter].width = max_length + 2
             

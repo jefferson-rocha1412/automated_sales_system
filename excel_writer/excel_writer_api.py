@@ -1,4 +1,4 @@
-from openpyxl.styles import Font, Alignment
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from api.api_client import get_api_data
 from utils.logger import logger_setup
 from config.config import Config
@@ -16,6 +16,21 @@ os.makedirs(Config.OUTPUT_FOLDER, exist_ok=True)
 save_path = os.path.join(Config.OUTPUT_FOLDER, Config.API_WORKBOOK_FILENAME)
 
 def get_products_data():
+    # BORDER SETTINGS
+    thick_border = Border(
+        left=Side(style='thick', color='000000'),
+        right=Side(style='thick', color='000000'),
+        top=Side(style='thick', color='000000'),
+        bottom=Side(style='thick', color='000000')
+    )
+
+    thin_border = Border(
+        left=Side(style='thin', color='000000'),
+        right=Side(style='thin', color='000000'),
+        top=Side(style='thin', color='000000'),
+        bottom=Side(style='thin', color='000000')
+    )
+
     api_data = get_api_data()
 
     if api_data is not None:
@@ -32,8 +47,11 @@ def get_products_data():
 
                 # FORMATTING THE WORKSHEET USING OPENPYXL
                 for cell in worksheet[1]:
-                    cell.font = Font(bold=True)
+                    cell.font = Font(bold=True, color='FFFFFF')
                     cell.alignment = Alignment(horizontal='center')
+                    cell.fill = PatternFill(fill_type='solid', fgColor='76966B')
+                    cell.border = thick_border
+
 
                     # FIND THE PRICE COLUMN NUMBER
                     if cell.value == 'price':
@@ -45,9 +63,9 @@ def get_products_data():
 
                 # NUMBER FORMATTING IN PRICE COLUMN
                 for cell in worksheet[price_column_letter][1:]:
-                        cell.number_format = "#,##0.00"
+                    cell.number_format = "#,##0.00"
 
-                # WRAPPING FORMATTING IN DESCRIPTION COLUMN
+                # WRAPPING & APPLYING BORDER FORMATTING IN DESCRIPTION COLUMN
                 for cell in worksheet[description_column_letter][1:]:
                     cell.alignment = Alignment(wrap_text=True)
 
@@ -56,6 +74,9 @@ def get_products_data():
                     max_length = 0
 
                     for cell in column:
+                        if cell.row != 1:
+                            cell.border = thin_border
+
                         if cell.value is not None:
                             length = len(str(cell.value))
                             max_length = max(max_length, length)
@@ -66,8 +87,14 @@ def get_products_data():
                     # ADJUST THE COLUMN WIDTH
                     worksheet.column_dimensions[column_letter].width = min(max_length + 2, 50)
 
+                # FREEZE PANES
+                worksheet.freeze_panes = 'A2'
+
+                # AUTO FILTER
+                worksheet.auto_filter.ref = worksheet.dimensions
+
         except PermissionError:
-            print(f'Unable to save {Config.API_SHEET_FILENAME}. Please close the file and try again.')
+            logger.info(f'Unable to save {Config.API_SHEET_FILENAME}. Please close the file and try again.')
     else:
         logger.info('Cannot continue processing, API data is empty.')
 

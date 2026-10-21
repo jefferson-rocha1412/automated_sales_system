@@ -4,8 +4,12 @@ from sales.sales_data import get_excel_data
 from config.config import Config
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+from utils.logger import logger_setup
 
 def sales_report():
+    # CREATE THE LOGGER INFO
+    logger = logger_setup()
+    
     # BORDER SETTINGS
     thick_border = Border(
         left=Side(style='thick', color='000000'),
@@ -85,7 +89,7 @@ def sales_report():
 
                         max_length = max(max_length, length)
 
-                worksheet_summary.column_dimensions[column_letter].width = max_length + 2
+                worksheet_summary.column_dimensions[column_letter].width = max_length + 6
 
             # FREEZE PANES
             worksheet_summary.freeze_panes = 'A2'
@@ -130,10 +134,10 @@ def sales_report():
                         
                         max_length = max(max_length, length)
 
-                worksheet_salesbyperson.column_dimensions[column_letter].width = max_length + 2
+                worksheet_salesbyperson.column_dimensions[column_letter].width = max_length + 6
             
     except PermissionError:
-        print(f'Unable to save {Config.SALES_REPORT_WORKBOOK_FILENAME}. Please close the file and try again.')
+        logger.info(f'Unable to save {Config.SALES_REPORT_WORKBOOK_FILENAME}. Please close the file and try again.')
 
 if __name__ == "__main__":
     sales_report()

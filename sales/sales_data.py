@@ -48,11 +48,22 @@ def get_excel_data():
     if data_frames:
         combine_data = pd.concat(data_frames, ignore_index=True)
 
+        # CONVERT THE DATE COLUMN TO DATETIME
+        combine_data['Date'] = pd.to_datetime(combine_data['Date'])
+
+        combine_data = combine_data.sort_values(by='Date', ascending=True).reset_index(drop=True)
+
+        # SET THE NUMBER FROM 1 TO THE LAST COUNT
+        combine_data['No.'] = range(1, len(combine_data) + 1)
+
         # CREATE A SALES COLUMN
         combine_data['Sales'] = combine_data['Quantity'] * combine_data['Unit Price']
 
         # GROUP BY SALES OF SALESPERSON
         sales_by_person = combine_data.groupby('Sales Person')['Sales'].sum().reset_index()
+
+        # SORT THE SALES FROM HIGHEST TO LOWEST
+        sales_by_person = sales_by_person.sort_values(by='Sales', ascending=False).reset_index(drop=True)
 
         return combine_data, sales_by_person
     else:
